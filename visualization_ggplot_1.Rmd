@@ -6,6 +6,12 @@ Load all necessary pacakges.
 ```{r load packages, message = FALSE}
 library(tidyverse)
 library(ggridges)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = 0.6,
+  out.width = "90%"
+)
 ```
 
 Get the data for plotting today.
@@ -75,6 +81,77 @@ Try assigning specfic colors
 df_weather |> 
   filter(name != "CentralPark_NY") |> 
   ggplot(aes(x = date, y = tmax, color = name)) +
-  geom_point(alpha = 0.7, size = 0.5)
+  geom_point(alpha = 0.7, size = 0.5) 
+
+```
+
+```{r geom_hex!}
+#gives density in hex cells
+ggplot(df_weather, aes(x = tmin, y = tmax)) +
+  geom_point() +
+  geom_hex()
+```
+
+
+```{r line plots}
+df_weather |> 
+  filter(name == "Molokai_HI") |> 
+  ggplot(aes(x = date, y = tmax)) +
+  geom_line(alpha = 0.5) + 
+  geom_point(alpha = 0.5)
+```
+
+
+## Univariate plots
+
+Histogram
+```{r histogram}
+ggplot(df_weather, aes(x = tmax, color = name, fill = name)) +
+  geom_histogram(position = "dodge", alpha = 0.5)
+
+```
+
+`dodge` works but it makes things hard to read. Instead, let's use a density plot.
+
+```{r denisty plots}
+ggplot(df_weather, aes(x = tmax, fill = name)) +
+  geom_density(alpha = 0.5)
+```
+
+Boxplots!
+```{r boxplot}
+ggplot(df_weather, aes(y = tmax, x = name)) + 
+  geom_boxplot()
+```
+
+Violin plots. Don't use them kids.
+```{r evil plots}
+ggplot(df_weather, aes(y = tmax, x = name)) + 
+  geom_violin()
+
+```
+
+Ridge plot. The hottest new thing.
+```{r ridge plot}
+ggplot(df_weather, aes(x = tmax, y = name)) + 
+  geom_density_ridges() 
+```
+
+## Saving and embedding plots
+
+```{r saving plots}
+ggp_weather <- 
+  df_weather |> 
+    ggplot(aes(x = tmin, y = tmax)) +
+    geom_point()
+
+ggp_weather
+
+# save
+ggsave("results/ggp_weather.pdf", ggp_weather)
+```
+
+```{r figwidth, fig.width = 6, fig.asp = 0.6}
+ggp_weather
 ```
 
