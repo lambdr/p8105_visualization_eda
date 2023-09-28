@@ -22,7 +22,7 @@ df_weather =
     name = recode(
       id, 
       USW00094728 = "CentralPark_NY", 
-      USC00519397 = "Molokai_HI",
+      USW00022534 = "Molokai_HI",
       USS0023B17S = "Waterhole_WA"),
     tmin = tmin / 10,
     tmax = tmax / 10) |>
@@ -37,16 +37,44 @@ ggplot(df_weather, aes(x = tmin, y = tmax)) +
 ```
 
 Pipes and stuff
-```{r}
+```{r pipes and saving plot}
 ggp_nyc_weather <- 
   df_weather |> 
     filter(name == "CentralPark_NY") |> 
     ggplot(aes(x = tmin, y = tmax)) +
     geom_point()
+
+ggp_nyc_weather
 ```
 
 ## Fancy plot
-```{r}
+```{r color and smooth}
+ggplot(df_weather, aes(x = tmin, y = tmax)) +
+  geom_point(aes(color = name), alpha = 0.3) +
+  geom_smooth(se = FALSE)
+```
 
+Plot with facets
+```{r facets}
+ggplot(df_weather, aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ name)
+```
+
+Let's try a different plot. temps are boring
+```{r tmax vs date}
+ggplot(df_weather, aes(x = date, y = tmax, color = name)) +
+  geom_point(aes(size = prcp), alpha = 0.3) +
+  geom_smooth(se = 0) + 
+  facet_grid(. ~ name)
+```
+
+Try assigning specfic colors
+```{r color assignment}
+df_weather |> 
+  filter(name != "CentralPark_NY") |> 
+  ggplot(aes(x = date, y = tmax, color = name)) +
+  geom_point(alpha = 0.7, size = 0.5)
 ```
 
