@@ -1,0 +1,11 @@
+---
+title: 'Data viz: ggplot 1'
+author: "Derek Lamb"
+date: "`r Sys.Date()`"
+output: github_document
+---
+Load all necessary pacakges.
+```{r load packages}
+library(tidyverse)
+```
+
