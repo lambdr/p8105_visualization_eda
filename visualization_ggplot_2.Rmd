@@ -24,8 +24,8 @@ df_weather =
   rnoaa::meteo_pull_monitors(
     c("USW00094728", "USW00022534", "USS0023B17S"),
     var = c("PRCP", "TMIN", "TMAX"), 
-    date_min = "2021-01-01",
-    date_max = "2022-12-31") |>
+    date_min = "2022-01-01",
+    date_max = "2023-12-31") |>
 # Rename and clean variables
   mutate(
     name = recode(
@@ -38,8 +38,8 @@ df_weather =
   select(name, id, everything())
 ```
 
-
-## Same plot from last time
+This results in a dataframe with `r nrow(df_weather)` observations on six variables.
+## Labs
 ```{r first plot}
 df_weather |> 
   ggplot(aes(x = tmin, y = tmax, color = name)) +
@@ -53,7 +53,7 @@ df_weather |>
   )
 ```
 
-### Scales
+## Scales & Colors
 ```{r scales}
 df_weather |> 
   ggplot(aes(x = tmin, y = tmax, color = name)) +
@@ -89,5 +89,133 @@ df_weather |>
     caption = "Max vs Min daily temp from three locations; data from rnoaa"
   ) +
   scale_color_viridis_d()
+```
+
+
+## Themes
+
+```{r theme}
+df_weather |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = 0.5) +
+  labs(
+    title = "Temperature Plot",
+    x = "Min daily temp (°C)",
+    y = "Max daily temp (°C)",
+    color = "Location",
+    caption = "Max vs Min daily temp from three locations; data from rnoaa"
+  ) +
+  scale_color_viridis_d() +
+  theme_bw() +
+  theme(legend.position = "bottom") 
+
+  
+```
+
+## Data argument
+```{r}
+df_weather |> 
+  ggplot(aes(x = date, y = tmax,color = name)) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+
+df_nyc_weather <- 
+  df_weather |> 
+  filter(name == "CentralPark_NY")
+
+df_hawaii_weather <- 
+  df_weather |> 
+  filter(name == "Molokai_HI")
+
+ggplot(df_nyc_weather, aes(x = date, y = tmax, color = name)) +
+  geom_point() + 
+  geom_line(data = df_hawaii_weather)
+```
+
+
+## `patchwork`
+Compare
+```{r old method}
+df_weather |> 
+  ggplot(aes(x = date, y = tmax, color = name)) +
+  geom_point() +
+  theme_classic() +
+  facet_grid(. ~ name)
+```
+
+```{r patchwork}
+ggp_temp_scatter <- 
+  df_weather |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = 0.5) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+ggp_prcp_density <- 
+  df_weather |>
+  filter(prcp > 25) |> 
+  ggplot(aes(x = prcp, fill = name)) +
+  geom_density(alpha = 0.4) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+ggp_tmax_date = 
+  df_weather |> 
+  ggplot(aes(x = date, y = tmax, color = name)) +
+  geom_point() +
+  geom_smooth(se = 0) +
+  theme(legend.position = "bottom")
+
+(ggp_temp_scatter + ggp_prcp_density) /ggp_tmax_date
+
+```
+
+
+## Data manipulation
+```{r data manip}
+# Reorder characters as factors by hand
+df_weather |> 
+  mutate(
+    name = fct_relevel(name, c("Molokai_HI", "CentralPark_NY", "Waterhole_WA"))) |> 
+  ggplot(aes(x = name, y = tmax)) + 
+  geom_boxplot()
+
+# Reorder character as factors by avg. level of another variable
+df_weather |> 
+  mutate(
+    name = fct_reorder(name, tmax)) |> 
+    ggplot(aes(x = name, y = tmax)) + 
+  geom_boxplot()
+```
+
+## Hard Problem: FAS data
+
+```{r import FAS}
+df_litters <- read_csv("data/FAS_litters.csv") |> 
+  janitor::clean_names() |> 
+  separate(group, into = c("dose", "day_of_tx"), sep = 3)
+
+df_pups <- read_csv("data/FAS_pups.csv") |> 
+  janitor::clean_names() |> 
+  mutate(sex = case_match(sex,
+    2 ~ "Male",
+    1 ~ "Female"
+  ))
+
+df_fas <- left_join(df_litters, df_pups, by = "litter_number")
+
+df_fas |> 
+  select(dose, day_of_tx, starts_with("pd")) |> 
+  pivot_longer(
+    pd_ears:pd_walk,
+    names_to = "outcome",
+    values_to = "pn_day"
+  ) |> 
+  mutate(outcome = fct_reorder(outcome, pn_day, median)) |> 
+  drop_na() |> 
+  ggplot(aes(x = dose, y = pn_day)) +
+  geom_boxplot() +
+  theme_bw() +
+  facet_grid(day_of_tx ~ outcome)
 ```
 
