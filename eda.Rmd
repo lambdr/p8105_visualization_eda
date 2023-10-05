@@ -1,0 +1,146 @@
+---
+title: "EDA"
+author: "Derek Lamb"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+Load all necessary pacakges.
+```{r load packages, message = FALSE}
+library(tidyverse)
+
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+## These are options that i'm going to treat as default for now
+## I don't love viridis, but don't have a better option yet
+## Future note: consider magma?
+theme_set(theme_bw() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+## Data Import
+Get the data for plotting today.
+```{r pull in data}
+# Pull 3 weather stations from NOAA dataset
+df_weather = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USW00022534", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2021-01-01",
+    date_max = "2022-12-31") |>
+# Rename and clean variables
+  mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NY", 
+      USW00022534 = "Molokai_HI",
+      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10,
+    month = lubridate::floor_date(date, unit = "month")) |>
+  select(name, id, everything())
+```
+
+## Initial numeric work
+
+```{r initial viz}
+df_weather |> 
+  ggplot(aes(x = prcp)) + 
+  geom_histogram()
+```
+
+Here are the big outliers
+```{r outliers}
+df_weather |> 
+  filter(prcp>1000)
+```
+
+```{r curious things - temp}
+df_weather |> 
+  filter(tmax >=20, tmax <= 30) |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point()
+```
+
+## Grouping
+
+```{r grouping 1}
+df_weather |> 
+  group_by(name, month)
+```
+
+## Counting
+```{r counting 1}
+df_weather |> 
+  group_by(name, month) |> 
+  summarize(n_nobs = n())
+```
+
+```{r grouping 2}
+df_weather |> 
+  group_by(month) |> 
+  summarize(n_obs = n())
+```
+
+```{r counting 2}
+df_weather |> 
+  count(name)
+```
+
+```{r}
+df_weather |> 
+  count(name, month) |> 
+  pivot_wider(
+    names_from = name,
+    values_from = n
+  )
+```
+
+## General numeric summary
+```{r summary}
+df_weather |> 
+  group_by(name, month) |> 
+  summarize(
+    mean_tmax = mean(tmax, na.rm = TRUE),
+    median_tmax = median(tmax, na.rm = TRUE),
+    sd_tmax = sd(tmax, na.rm = TRUE))
+```
+
+### Direct into ggplot
+```{r plot from group_by}
+df_weather |> 
+  group_by(name, month) |> 
+  summarize(
+    mean_tmax = mean(tmax, na.rm = TRUE) 
+  ) |> 
+  ggplot(aes(x = month, y = mean_tmax, color = name)) + 
+  geom_point() + 
+  geom_line()
+```
+
+## More pivoting
+```{r}
+df_weather |> 
+  group_by(name, month) |> 
+  summarize(
+    mean_tmax = mean(tmax, na.rm = TRUE) 
+  ) |> 
+  pivot_wider(
+    names_from = name,
+    values_from = mean_tmax
+  ) |> 
+  knitr::kable(digits = 2)
+```
+
