@@ -144,3 +144,54 @@ df_weather |>
   knitr::kable(digits = 2)
 ```
 
+## Grouped mutate
+
+```{r group mutate}
+df_weather |> 
+  group_by(name) |> 
+  mutate(mean_tmax = mean(tmax, na.rm = TRUE)) 
+
+## The mean is at the group level
+
+```
+
+```{r}
+df_weather |> 
+  group_by(name) |> 
+  mutate(mean_tmax = mean(tmax, na.rm = TRUE),
+         centered_tmax = tmax- mean_tmax) |> 
+  ggplot(aes(x = date, y= centered_tmax, color = name)) +
+  geom_point()
+
+
+```
+
+## Window functions
+```{r}
+#
+df_weather |> 
+  group_by(name, month) |> 
+  mutate(tmax_rank = min_rank(tmax)) |> 
+  filter(tmax_rank < 2)
+# desc() function flips order
+```
+
+## Lags
+```{r}
+df_weather |> 
+  group_by(name) |> 
+  mutate(yesterday_tmax = lag(tmax, 3)) |> 
+  view()
+```
+
+`lag()` grabs previous data. by default it was the previous day, but you can lag back 2, 3, n data.
+
+```{r}
+df_weather |> 
+  group_by(name) |> 
+  mutate(delta_tmax = tmax - lag(tmax)) |> 
+  summarize(
+    sd_delta = sd(delta_tmax, na.rm = TRUE)
+  )
+```
+
